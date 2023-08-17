@@ -25,4 +25,3 @@ class Account(models.Model):
     currency = models.CharField(max_length=3, choices=CurrencyTypes.choices)
     amount = models.FloatField(default=0.0, blank=True, null=True)
     transaction_history = models.JSONField(default=list)
-

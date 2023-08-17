@@ -9,6 +9,9 @@ from django.shortcuts import get_object_or_404
 from datetime import datetime, timedelta
 import json
 from django.http import HttpResponse
+from rest_framework import status
+import csv
+
 # Create your views here.
 
 class WalletView(APIView):
@@ -24,7 +27,7 @@ class WalletView(APIView):
         serializer.is_valid(raise_exception=True)
         serializer.save()
 
-        return Response(serializer.data)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
    
 class AccountBalanceView(APIView):
     def get(self, request, username):
@@ -36,7 +39,7 @@ class AccountBalanceView(APIView):
         serializer = AccountBalanceSerializer()
         balances = serializer.get_account_balances(owner)
         
-        return Response(balances)
+        return Response(balances, status=HTTP_200_OK)
 
 class AccountDepositView(APIView):
     permission_classes = [IsAuthenticated]
@@ -60,9 +63,9 @@ class AccountDepositView(APIView):
             account.transaction_history.append(transaction_data)
             account.save()
 
-            return Response({"message": f"Successfully deposited {amount} into your account."})
+            return Response({"message": f"Successfully deposited {amount} into your account."}, status=HTTP_200_OK)
         else:
-            return Response(serializer.errors)
+            return Response(serializer.errors, status=HTTP_404_NOT_FOUND)
  
 class WithdrawView(APIView):
     
@@ -87,9 +90,9 @@ class WithdrawView(APIView):
             account.transaction_history.append(transaction_data)
             account.save()
 
-            return Response({"message": f"Successfully withdrawed {amount} from your account."})
+            return Response({"message": f"Successfully withdrawed {amount} from your account."}, status=HTTP_200_OK)
         else:
-            return Response(serializer.errors)
+            return Response(serializer.errors, status=HTTP_404_NOT_FOUND)
 
 class TransactionHistoryView(APIView):
     def get(self, request, username, account_number):
@@ -99,7 +102,7 @@ class TransactionHistoryView(APIView):
         transaction_history = account.transaction_history
         serializer = TransactionSerializer(transaction_history, many=True)
 
-        return Response(serializer.data)
+        return Response(serializer.data, status=HTTP_200_OK)
 
 class AccountStatementView(APIView):
     def get(self, request, username, account_number):
@@ -107,9 +110,9 @@ class AccountStatementView(APIView):
             user = User.objects.get(username=username)
             account = Account.objects.get(owner=user, account_number=account_number)
         except User.DoesNotExist:
-            return Response({"error": "User not found."})
+            return Response({"error": "User not found."}, status=HTTP_404_NOT_FOUND)
         except Account.DoesNotExist:
-            return Response({"error": f"No account found with account number: {account_number}"})
+            return Response({"error": f"No account found with account number: {account_number}"}, status=HTTP_404_NOT_FOUND)
 
         transactions_history = account.transaction_history
 
@@ -118,6 +121,9 @@ class AccountStatementView(APIView):
         response = HttpResponse(json_data, content_type='application/json')
         response['Content-Disposition'] = f'attachment; filename="{username}_transaction_history.json"'
 
+        # TODO download .csv files NOT json
+        
+
         return response
 
-        return Response(transactions_history)
+        return Response(transactions_history, status=HTTP_200_OK)
